@@ -25,7 +25,8 @@
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "node",
     "module": "commonjs",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "jsx": "react"
   },
   "include": [
     "src/**/*"
