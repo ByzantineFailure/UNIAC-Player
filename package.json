@@ -12,6 +12,8 @@
   },
   "devDependencies": {
     "@types/express": "^4.17.0",
+    "@types/ip": "^1.1.0",
+    "@types/needle": "^2.0.4",
     "@types/node": "^12.0.10",
     "@types/react": "^16.8.22",
     "@types/react-dom": "^16.8.4",
@@ -28,7 +30,9 @@
     "webpack-cli": "^3.3.4"
   },
   "dependencies": {
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "ip": "^1.1.5",
+    "needle": "^2.4.0"
   },
   "author": "Michael Eaton <byzanitnefailure@gmail.com>",
   "license": "MIT"
