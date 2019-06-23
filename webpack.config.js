@@ -22,6 +22,9 @@ module.exports = {
             { enforce: "pre", test: /\.js$/, loader: "source-map-loader"}
         ]
     },
+    node: {
+        fs: "empty"
+    },
     plugins: [
         new CopyPlugin([{
             from: path.join(__dirname, 'src', 'web', 'index.html'),

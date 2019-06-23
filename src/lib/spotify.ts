@@ -1,34 +1,22 @@
 import needle from "needle";
 
-import {IListResponse, IPlaylist, ITrack} from "../types/spotify";
+import {IListResponse, IPlaylist, IRawSpotifyTrack} from "../types/spotify";
 
-import {Authentication} from "./auth";
-
-// const PLAYLIST_NAME = "Web Playlist";
+import {Authentication} from "./handlers/auth";
 
 export class Spotify {
     constructor(private readonly auth: Authentication) {}
 
-    public getPlaylists(): Promise<IPlaylist[]> {
-        return new Promise((resolve, reject) => {
-            this.makeGetRequest<IListResponse<IPlaylist>>("https://api.spotify.com/v1/me/playlists")
-            .then((result: IListResponse<IPlaylist>) => {
-                resolve(result.items);
-            }).catch((err: Error) => {
-                reject(err);
-            });
-        });
+    public async getPlaylists(): Promise<IPlaylist[]> {
+        const response =
+        await this.makeGetRequest<IListResponse<IPlaylist>>("https://api.spotify.com/v1/me/playlists");
+        return response.items;
     }
 
-    public getPlaylistTracks(playlistId: string): Promise<ITrack[]> {
+    public async getPlaylistTracks(playlistId: string): Promise<IRawSpotifyTrack[]> {
         const url = `https://api.spotify.com/v1/playlists/${playlistId}/tracks`;
-        return new Promise((resolve, reject) => {
-            this.makeGetRequest<IListResponse<ITrack>>(url).then(( result: IListResponse<ITrack>) => {
-                resolve(result.items);
-            }).catch((err: Error) => {
-                reject(err);
-            });
-        });
+        const response = await this.makeGetRequest<IListResponse<IRawSpotifyTrack>>(url);
+        return response.items;
     }
 
     private makeGetRequest<T>(url: string): Promise<T> {

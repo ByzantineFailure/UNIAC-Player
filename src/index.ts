@@ -1,7 +1,8 @@
 import express from "express";
 import ip from "ip";
 import path from "path";
-import {Authentication} from "./lib/auth";
+import {registerHandlers} from "./lib/handlers/api";
+import {Authentication, redirectForAuth} from "./lib/handlers/auth";
 import { Spotify } from "./lib/spotify";
 
 const app = express();
@@ -15,6 +16,7 @@ if (!host) {
 const auth = new Authentication(host!, false, port);
 const spotify = new Spotify(auth);
 
+// AUTH HANDLERS
 app.use("/request_token", (req, res) => {
   if (auth.needToAuth()) {
     auth.getRequestTokenHandler(req, res);
@@ -33,25 +35,11 @@ app.use("/access_token", (req, res) => {
   }
 });
 
-app.use("/get_playlists", (req, res) => {
-  if (auth.needToAuth()) {
-    res.redirect("/request_token");
-    res.end();
-    return;
-  }
+// API HANDLERS
+registerHandlers(app, spotify, auth);
 
-  spotify.getPlaylists().then((playlists) => {
-    res.status(200);
-    res.send(playlists);
-    res.end();
-  }).catch((err) => {
-    res.status(500);
-    res.send(err);
-    res.end();
-  });
-});
-
-app.use("/static/", express.static(path.join(__dirname, "web")));
+// EVERYTHING ELSE
+app.use("/static/", redirectForAuth(auth, express.static(path.join(__dirname, "web"))));
 
 app.use("/", (req, res) => {
   if (auth.needToAuth()) {

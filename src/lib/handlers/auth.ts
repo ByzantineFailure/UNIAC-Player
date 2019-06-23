@@ -3,7 +3,7 @@ import needle from "needle";
 import querystring from "querystring";
 import {URL} from "url";
 
-import * as Credentials from "../credentials";
+import * as Credentials from "../../credentials";
 
 const REQUEST_TOKEN_URL = "https://accounts.spotify.com/authorize";
 const REDIRECT_PATH = "/access_token";
@@ -126,4 +126,17 @@ export class Authentication {
             setTimeout(this.refreshTokens, (body.expires_in * 1000) - 30000);
         });
     }
+}
+
+export function redirectForAuth(auth: Authentication, callback: express.Handler):
+    express.Handler {
+        return (req: express.Request, res: express.Response) => {
+            if (auth.needToAuth()) {
+                res.redirect("/request_token");
+                res.end();
+                return;
+            }
+
+            callback(req, res, () => {});
+        };
 }

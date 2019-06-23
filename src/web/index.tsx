@@ -1,13 +1,22 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
+import {Provider} from "react-redux";
 
-class TestComponent extends React.Component<{}, {}> {
+import {Api} from "./api/spotify";
+import {App} from "./components/app";
+import {store} from "./state/reducer";
+
+class AppHost extends React.Component<{}, {}> {
     public render() {
-        return <h1>Hi from the component!</h1>;
+        return <Provider store={store}>
+            <App />
+        </Provider>;
     }
 }
 
+Api.getApi().getTracks();
+
 ReactDOM.render(
-    <TestComponent />,
+    <AppHost />,
     document.getElementById("app-host")
 );
