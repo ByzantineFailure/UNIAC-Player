@@ -13,6 +13,8 @@ const REQUEST_TOKEN_PARAM = "code";
 const ENCODED_SECRETS = new Buffer(`${Credentials.CLIENT_ID}:${Credentials.CLIENT_SECRET}`).toString("base64");
 
 export class Authentication {
+    public onAuthenticated: Promise<void>;
+
     private readonly redirectUrl: string;
     private accessToken: string|null = null;
     private refreshToken: string|null = null;
@@ -31,6 +33,10 @@ export class Authentication {
         }
 
         this.redirectUrl = urlConstructor.href;
+
+        this.onAuthenticated = new Promise((resolve, reject) => {
+            this.resolveAuth = resolve;
+        });
     }
 
     public needToAuth(): boolean {
@@ -59,6 +65,8 @@ export class Authentication {
         res.end();
     }
 
+    // TODO - prevent this from re-authing if we've already got authentication handled.
+    // We can get into a real nasty state if we don't do that.
     public getAccessTokenHandler(req: express.Request, res: express.Response): void {
         if (!req.query[REQUEST_TOKEN_PARAM]) {
             console.log(req.query);
@@ -89,13 +97,14 @@ export class Authentication {
 
             this.accessToken = body.access_token;
             this.refreshToken = body.refresh_token;
-
             res.redirect(301, "/static");
             res.end();
 
             setTimeout(this.refreshTokens, (body.expires_in * 1000) - 30000);
+            this.resolveAuth!();
         });
     }
+    private resolveAuth: () => void = () => {};
 
     private refreshTokens() {
         console.log("refreshing tokens...");
@@ -104,6 +113,8 @@ export class Authentication {
             grant_type: "refresh_token",
             refresh_token: this.refreshToken
         });
+
+        const boundReference = this.refreshTokens.bind(this);
 
         needle.post("https://accounts.spotify.com/api/token", requestBody,
             { headers: { Authorization: `Basic ${ENCODED_SECRETS}` } },
@@ -122,8 +133,9 @@ export class Authentication {
 
             this.accessToken = body.access_token;
 
+            // TODO - make this work
             // Dollars to donuts this causes a stack overflow after several days of running.
-            setTimeout(this.refreshTokens, (body.expires_in * 1000) - 30000);
+            setTimeout(boundReference, (body.expires_in * 1000) - 30000);
         });
     }
 }

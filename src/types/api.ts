@@ -22,10 +22,32 @@ export interface IAddTrackRequest {
     toFront: boolean;
 }
 
+export interface IAddTrackResponse {
+    playlist: IPlaylist;
+    tracks: ITrack[];
+}
+
 /**
- * Request object for removing a track fom the playlist.
+ * Request object for removing a track from the playlist.
  */
 export interface IRemoveTrackRequest {
     id: string;
     uri: string;
+}
+
+/**
+ * Enum of possible error codes.
+ */
+export enum ErrorCodes {
+    MALFORMATTED_URI,
+    UNKNOWN_URI,
+    CANNOT_REMOVE_CURRENTLY_PLAYING,
+}
+
+/**
+ * Error response object.
+ */
+export interface IErrorMessage {
+    code: ErrorCodes;
+    message: string;
 }

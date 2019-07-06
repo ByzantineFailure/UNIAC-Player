@@ -7,6 +7,10 @@ export interface IRawSpotifyTrack {
     track: ITrack;
 }
 
+export interface ICurrentPlayback {
+    item: IRawSpotifyTrack|null;
+}
+
 export interface IPlaylist {
     name: string;
     id: string;
@@ -26,4 +30,23 @@ export interface ITrack {
     id: string;
     name: string;
     uri: string;
+}
+
+export interface ITrackReorderRequest {
+    range_start: number;
+    range_length?: number;
+    insert_before: number;
+    snapshot_id?: string;
+}
+
+export interface IAddTrackRequest {
+    uris: string[];
+    position?: number;
+}
+
+export interface IRemoveTrackRequest {
+    tracks: Array<{
+        uri: string;
+        positions?: number[];
+    }>;
 }
