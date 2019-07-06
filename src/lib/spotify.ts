@@ -9,6 +9,7 @@ const PLAYLIST_REFRESH_INTERVAL = 15000;
 const CURRENT_TRACK_REFRESH_INTERVAL = 10000;
 const CLEAR_TRACK_INTERVAL = 500;
 
+// TODO - Ensure we're actually targetting the UNIAC when we hit play. (Devices)
 export class Spotify {
     private _currentTrack: IRawSpotifyTrack|null = null;
     private _currentTracklist: IRawSpotifyTrack[] = [];
@@ -73,7 +74,7 @@ export class Spotify {
         return this.currentTracklist;
     }
 
-    public async addTrackToPlaylist(uri: string, addToStart: boolean = false): Promise<{}> {
+    public async addTrackToPlaylist(uri: string, addToStart: boolean = false): Promise<IRawSpotifyTrack[]> {
         await this.hasPlaylist;
         const url = `https://api.spotify.com/v1/playlists/${this.playlistId}/tracks`;
         let position: number|undefined;
@@ -90,19 +91,50 @@ export class Spotify {
             uris: [uri],
         };
 
-        return this.makeRequest("post", url, request);
+        await this.makeRequest("post", url, request);
+
+        // We have to get the track from the uri to add to the playlist via the api anyway,
+        // so just refresh the entire thing instead of doing the work of managing the array.
+        await this.getPlayerPlaylist();
+
+        return this.currentTracklist;
     }
 
-    public async removeTrackFromPlaylist(uri: string): Promise<{}> {
+    public async removeTrackFromPlaylist(uri: string): Promise<IRawSpotifyTrack[]> {
         await this.hasPlaylist;
         const url = `https://api.spotify.com/v1/playlists/${this.playlistId}/tracks`;
         const request: IRemoveTrackRequest = {
             tracks: [{uri}]
         };
 
-        console.log("Delete request", request);
+        await this.makeRequest("delete", url, request);
 
-        return this.makeRequest("delete", url, request);
+        // Update the playlist
+        this._currentTracklist = this._currentTracklist.filter((track) => track.track.uri !== uri);
+
+        return this.currentTracklist;
+    }
+
+    public async nextTrack(): Promise<{}> {
+        const url = `https://api.spotify.com/v1/playlists/me/player/next`;
+        return await this.makeRequest("post", url);
+    }
+
+    public async startPlayback(): Promise<{}> {
+        await this.hasPlaylist;
+
+        const url = "https://api.spotify.com/v1/me/player/play";
+
+        return await this.makeRequest("put", url, {
+           context_uri: this.playlist.uri,
+        });
+    }
+
+    public async pausePlayback(): Promise<{}> {
+        await this.hasPlaylist;
+
+        const url = `https://api.spotify.com/v1/me/player/pause`;
+        return await this.makeRequest("put", url);
     }
 
     // TODO - Create the playlist if it doesn't exist.  Requires getting the user's id.
@@ -142,20 +174,15 @@ export class Spotify {
 
     private async removePlayedTrackFromPlaylist(): Promise<void> {
         if (!this.currentTracklist || this.currentTracklist.length === 0) {
-            console.log("No tracks in playlist");
             return;
         }
 
         const firstTrack = this.currentTracklist[0];
-        console.log("First track", firstTrack);
 
         try {
             if (!this.currentTrack || this.currentTrack.track.id !== firstTrack.track.id) {
-                console.log("Removing track from playlist");
                 await this.removeTrackFromPlaylist(firstTrack.track.uri);
                 this._currentTracklist = this.currentTracklist.slice(1);
-            } else {
-                console.log("Current track matches currently playing");
             }
         } catch (error) {
             console.log("Error clearing played track from playlist", error);

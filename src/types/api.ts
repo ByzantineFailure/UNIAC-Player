@@ -39,9 +39,12 @@ export interface IRemoveTrackRequest {
  * Enum of possible error codes.
  */
 export enum ErrorCodes {
-    MALFORMATTED_URI,
-    UNKNOWN_URI,
+    ALREADY_PLAYING,
     CANNOT_REMOVE_CURRENTLY_PLAYING,
+    CANNOT_SKIP,
+    MALFORMATTED_URI,
+    NOT_PLAYING,
+    UNKNOWN_URI,
 }
 
 /**

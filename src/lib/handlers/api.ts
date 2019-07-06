@@ -80,7 +80,7 @@ function removeTrackHandler(spotify: Spotify): AsyncHandler {
         if (spotify.currentTrack && spotify.currentTrack.track.uri === request.uri) {
             const errorResponse: IErrorMessage = {
                 code: ErrorCodes.CANNOT_REMOVE_CURRENTLY_PLAYING,
-                message: 'Cannot remove the currently playing track!',
+                message: "Cannot remove the currently playing track!",
             };
             res.status(400);
             res.send(errorResponse);
@@ -109,9 +109,72 @@ function getCurrentTrackHandler(spotify: Spotify): Handler {
     };
 }
 
+function nextTrackHandler(spotify: Spotify): AsyncHandler {
+    return async (req, res) => {
+        if (spotify.currentTrack === null || spotify.currentTracklist.length <= 1) {
+            const errorResponse = {
+                code: ErrorCodes.CANNOT_SKIP,
+                message: "Cannot skip track; no track playing or not enough tracks in queue",
+            };
+            res.send(errorResponse);
+            res.status(400);
+            res.end();
+        }
+
+        await spotify.nextTrack();
+
+        res.status(200);
+        res.send();
+        res.end();
+    };
+}
+
+function startPlaybackHandler(spotify: Spotify): AsyncHandler {
+    return async (req, res) => {
+        if (spotify.currentTrack !== null) {
+            const errorMessage: IErrorMessage = {
+                code: ErrorCodes.ALREADY_PLAYING,
+                message: "Already playing, cannot "
+            };
+            res.status(400);
+            res.send(errorMessage);
+            res.end();
+            return;
+        }
+
+        await spotify.startPlayback();
+
+        res.status(200);
+        res.end();
+    };
+}
+
+function pausePlaybackHandler(spotify: Spotify): AsyncHandler {
+    return async (req, res) => {
+        if (spotify.currentTrack === null) {
+            const errorMessage: IErrorMessage = {
+                code: ErrorCodes.NOT_PLAYING,
+                message: "Not playing right now, cannot pause",
+            };
+            res.status(400);
+            res.send(errorMessage);
+            res.end();
+            return;
+        }
+
+        await spotify.pausePlayback();
+
+        res.status(200);
+        res.end();
+    };
+}
+
 export function registerHandlers(app: Express, spotify: Spotify, auth: Authentication) {
     app.get(Paths.GET_TRACKS_PATH, redirectForAuth(auth, getTracklistHandler(spotify)));
     app.put(Paths.ADD_TRACK_PATH, redirectForAuth(auth, addTrackHandler(spotify)));
     app.delete(Paths.REMOVE_TRACK_PATH, redirectForAuth(auth, removeTrackHandler(spotify)));
     app.get(Paths.GET_CURRENT_TRACK_PATH, redirectForAuth(auth, getCurrentTrackHandler(spotify)));
+    app.post(Paths.NEXT_TRACK_PATH, redirectForAuth(auth, nextTrackHandler(spotify)));
+    app.post(Paths.PLAY_PATH, redirectForAuth(auth, startPlaybackHandler(spotify)));
+    app.post(Paths.PAUSE_PATH, redirectForAuth(auth, pausePlaybackHandler(spotify)));
 }
