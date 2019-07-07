@@ -19,6 +19,8 @@ export class Authentication {
     private accessToken: string|null = null;
     private refreshToken: string|null = null;
 
+    private readonly refreshReference: () => void;
+
     constructor(
         hostname: string,
         https: boolean = false,
@@ -33,6 +35,7 @@ export class Authentication {
         }
 
         this.redirectUrl = urlConstructor.href;
+        this.refreshReference = this.refreshTokens.bind(this);
 
         this.onAuthenticated = new Promise((resolve, reject) => {
             this.resolveAuth = resolve;
@@ -100,7 +103,7 @@ export class Authentication {
             res.redirect(301, "/static");
             res.end();
 
-            setTimeout(this.refreshTokens, (body.expires_in * 1000) - 30000);
+            setTimeout(this.refreshReference, (body.expires_in * 1000) - 30000);
             this.resolveAuth!();
         });
     }
@@ -113,8 +116,6 @@ export class Authentication {
             grant_type: "refresh_token",
             refresh_token: this.refreshToken
         });
-
-        const boundReference = this.refreshTokens.bind(this);
 
         needle.post("https://accounts.spotify.com/api/token", requestBody,
             { headers: { Authorization: `Basic ${ENCODED_SECRETS}` } },
@@ -133,9 +134,7 @@ export class Authentication {
 
             this.accessToken = body.access_token;
 
-            // TODO - make this work
-            // Dollars to donuts this causes a stack overflow after several days of running.
-            setTimeout(boundReference, (body.expires_in * 1000) - 30000);
+            setTimeout(this.refreshReference, (body.expires_in * 1000) - 30000);
         });
     }
 }
