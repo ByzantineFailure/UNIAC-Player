@@ -1,0 +1,25 @@
+.play-control-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 24px;
+    width: 100%;
+}
+
+.control {
+    color: black;
+    cursor: pointer;
+    font-size: 48px;
+}
+
+.control[data-disabled=true] {
+    color: grey;
+    cursor: unset;
+}
+
+.fa-play {
+    margin-right: 48px;
+}
+
+.fa-pause {
+    margin-right: 48px;
+}

@@ -1,0 +1,13 @@
+@import './components/loadingBar';
+@import './components/playControl';
+@import './components/tracklist';
+@import './components/track';
+@import './components/uriInput';
+
+.app {
+  display: flex;
+  flex-direction: column;
+  margin: 0 auto;
+  max-width: 600px;
+  min-width: 320px;
+}

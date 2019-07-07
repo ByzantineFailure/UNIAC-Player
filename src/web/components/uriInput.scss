@@ -1,0 +1,28 @@
+.uri-input-container {
+    display: flex;
+    width: 100%;
+}
+
+.uri-input {
+    height: 48px;
+    margin-bottom: 16px;
+    width: 100%;
+}
+
+.uri-input-form {
+    width: 100%;
+}
+
+.button-row {
+    display: flex;
+    width: 100%;
+}
+
+.button-row > button {
+    height: 75px;
+    width: 75px;
+}
+
+.add-button {
+    margin-right: auto;
+}

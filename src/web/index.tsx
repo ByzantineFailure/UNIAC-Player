@@ -4,7 +4,10 @@ import {Provider} from "react-redux";
 
 import {Api} from "./api/spotify";
 import {App} from "./components/app";
+import "./index.scss";
 import {store} from "./state/reducer";
+
+Api.createApi(store);
 
 class AppHost extends React.Component<{}, {}> {
     public render() {
@@ -15,6 +18,7 @@ class AppHost extends React.Component<{}, {}> {
 }
 
 Api.getApi().getTracks();
+Api.getApi().getPlayState();
 
 ReactDOM.render(
     <AppHost />,

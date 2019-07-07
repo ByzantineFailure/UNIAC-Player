@@ -1,10 +1,11 @@
 import needle from "needle";
 
-import {IAddTrackRequest, ICurrentPlayback, IListResponse, IPlaylist, IRawSpotifyTrack, IRemoveTrackRequest} from "../types/spotify";
+import {IAddTrackRequest, ICreatePlaylistRequest, ICurrentPlayback, IListResponse, IPlaybackContext, IPlaylist, IRawSpotifyTrack, IRemoveTrackRequest, IUser} from "../types/spotify";
 
 import {Authentication} from "./handlers/auth";
 
 const PLAYLIST_NAME = "UNIAC Web Player Playlist";
+const PLAYLIST_DESCRIPTION = "Playlist for control fom UNIAC Player";
 const PLAYLIST_REFRESH_INTERVAL = 15000;
 const CURRENT_TRACK_REFRESH_INTERVAL = 10000;
 const CLEAR_TRACK_INTERVAL = 500;
@@ -12,27 +13,37 @@ const CLEAR_TRACK_INTERVAL = 500;
 // TODO - Ensure we're actually targetting the UNIAC when we hit play. (Devices)
 export class Spotify {
     private _currentTrack: IRawSpotifyTrack|null = null;
+    private _playbackContext: IPlaybackContext|null = null;
     private _currentTracklist: IRawSpotifyTrack[] = [];
     private _playlist: IPlaylist|null = null;
+    private _isPlaying = false;
 
-    private hasPlaylist: Promise<void>;
+    private readonly hasPlaylist: Promise<void>;
     private resolveHasPlaylist: () => void = () => {};
 
-    private hasTracks: Promise<void>;
+    private readonly hasTracks: Promise<void>;
     private resolveHasTracks: () => void = () => {};
 
     private get playlistId() {
         return this._playlist ? this._playlist.id : null;
     }
 
-    get playlist() {
-        return Object.assign({}, this._playlist);
+    get currentTrack() {
+        return this.isPlaying && this._currentTrack ? Object.assign({}, this._currentTrack) : null;
     }
     get currentTracklist() {
         return this._currentTracklist.slice(0);
     }
-    get currentTrack() {
-        return this._currentTrack ? Object.assign({}, this._currentTrack) : null;
+    get isPlaying() {
+        return this._isPlaying
+            && this._playbackContext
+            && this._playbackContext.uri === (this._playlist ? this._playlist.uri : "FAKE_URI");
+    }
+    get playlist() {
+        return Object.assign({}, this._playlist);
+    }
+    get playingAnotherPlaylist() {
+        return this._isPlaying && this._currentTrack === null;
     }
 
     constructor(private readonly auth: Authentication) {
@@ -81,7 +92,7 @@ export class Spotify {
 
         // If we have a track playing, add the track as the next up to play.
         // Otherwise add it to the front of the playlist.
-        if (addToStart) {
+        if (addToStart && this.currentTracklist.length > 0) {
             await this.getCurrentTrack();
             position = this.currentTrack === null ? 0 : 1;
         }
@@ -95,7 +106,7 @@ export class Spotify {
 
         // We have to get the track from the uri to add to the playlist via the api anyway,
         // so just refresh the entire thing instead of doing the work of managing the array.
-        await this.getPlayerPlaylist();
+        await this.getTracksFromSpotify();
 
         return this.currentTracklist;
     }
@@ -115,37 +126,43 @@ export class Spotify {
         return this.currentTracklist;
     }
 
-    public async nextTrack(): Promise<{}> {
-        const url = `https://api.spotify.com/v1/playlists/me/player/next`;
-        return await this.makeRequest("post", url);
+    public async nextTrack(): Promise<void> {
+        await this.hasPlaylist;
+        const url = `https://api.spotify.com/v1/me/player/next`;
+
+        await this.makeRequest("post", url);
+        await this.getCurrentTrack();
     }
 
-    public async startPlayback(): Promise<{}> {
+    public async startPlayback(): Promise<void> {
         await this.hasPlaylist;
 
         const url = "https://api.spotify.com/v1/me/player/play";
 
-        return await this.makeRequest("put", url, {
+        await this.makeRequest("put", url, {
            context_uri: this.playlist.uri,
         });
+
+        await this.getCurrentTrack();
     }
 
-    public async pausePlayback(): Promise<{}> {
+    public async pausePlayback(): Promise<void> {
         await this.hasPlaylist;
 
         const url = `https://api.spotify.com/v1/me/player/pause`;
-        return await this.makeRequest("put", url);
+        await this.makeRequest("put", url);
+
+        await this.getCurrentTrack();
     }
 
-    // TODO - Create the playlist if it doesn't exist.  Requires getting the user's id.
     private async getPlayerPlaylist(): Promise<IPlaylist> {
         const response =
         await this.makeRequest<IListResponse<IPlaylist>>("get", "https://api.spotify.com/v1/me/playlists");
         const playlists = response.items;
-        const foundPlaylist = playlists.find((playlist) => playlist.name === PLAYLIST_NAME);
+        let foundPlaylist = playlists.find((playlist) => playlist.name === PLAYLIST_NAME);
 
         if (!foundPlaylist) {
-            throw new Error("Playlist has not been instantiated!");
+            foundPlaylist = await this.createPlayerPlaylist();
         }
 
         return foundPlaylist;
@@ -163,30 +180,52 @@ export class Spotify {
     }
 
     private async getCurrentTrack(): Promise<void> {
+        await this.hasPlaylist;
+
         const url = `https://api.spotify.com/v1/me/player`;
         try {
             const response = await this.makeRequest<ICurrentPlayback>("get", url);
-            this._currentTrack = response.item;
+
+            this._currentTrack = response.item ? { track: response.item } : null;
+            this._isPlaying = response.is_playing;
+            this._playbackContext = response.context;
         } catch (error) {
             console.log("Error retrieving currently playing track", error);
         }
     }
 
     private async removePlayedTrackFromPlaylist(): Promise<void> {
-        if (!this.currentTracklist || this.currentTracklist.length === 0) {
+        if (!this.currentTracklist || this.currentTracklist.length === 0 || !this.isPlaying) {
             return;
         }
 
         const firstTrack = this.currentTracklist[0];
 
         try {
-            if (!this.currentTrack || this.currentTrack.track.id !== firstTrack.track.id) {
+            if (this.currentTrack!.track.id !== firstTrack.track.id) {
                 await this.removeTrackFromPlaylist(firstTrack.track.uri);
-                this._currentTracklist = this.currentTracklist.slice(1);
             }
         } catch (error) {
             console.log("Error clearing played track from playlist", error);
         }
+    }
+
+    private async createPlayerPlaylist(): Promise<IPlaylist> {
+        const user = await this.getUser();
+        const userId = user.id;
+        const url = `https://api.spotify.com/v1/users/${userId}/playlists`;
+
+        const request: ICreatePlaylistRequest = {
+            description: PLAYLIST_DESCRIPTION,
+            name: PLAYLIST_NAME,
+        };
+
+        return await this.makeRequest<IPlaylist>("post", url, request);
+    }
+
+    private async getUser(): Promise<IUser> {
+        const url = `https://api.spotify.com/v1/me`;
+        return await this.makeRequest<IUser>("get", url);
     }
 
     private makeRequest<T>(method: needle.NeedleHttpVerbs, url: string, params: any = {}): Promise<T> {

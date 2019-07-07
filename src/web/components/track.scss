@@ -1,0 +1,29 @@
+.track {
+    border-bottom: solid 1px grey;
+    display: flex;
+    height: 48px;
+    width: 100%;
+}
+
+.track-playing {
+    font-size: 24px;
+    margin: auto 16px auto 0;
+    width: 24px;
+}
+
+.track-data-container {
+    flex: 1;
+    margin: auto 0;
+}
+
+.track-remove {
+    cursor: pointer;
+    font-size: 24px;
+    width: 24px;
+    margin: auto 0;
+}
+
+.track-remove[data-disabled=true] {
+    color: grey;
+    cursor: unset;
+}

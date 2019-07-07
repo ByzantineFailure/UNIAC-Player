@@ -17,7 +17,6 @@ export interface IGetTracklistResponse {
  * to true, in which case it will be added to the front of the queue.
  */
 export interface IAddTrackRequest {
-    id: string;
     uri: string;
     toFront: boolean;
 }
@@ -31,8 +30,15 @@ export interface IAddTrackResponse {
  * Request object for removing a track from the playlist.
  */
 export interface IRemoveTrackRequest {
-    id: string;
     uri: string;
+}
+
+/**
+ * Response object containing the current play state.
+ */
+export interface IGetPlayStateResponse {
+    isPlaying: boolean;
+    currentTrack: ITrack|null;
 }
 
 /**

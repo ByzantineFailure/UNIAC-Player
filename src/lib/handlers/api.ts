@@ -1,7 +1,7 @@
 import {Express, Response} from "express";
 import {Spotify} from "../spotify";
 
-import {AsyncHandler, ErrorCodes, Handler, IAddTrackRequest, IErrorMessage} from "../../types/api";
+import {AsyncHandler, ErrorCodes, Handler, IAddTrackRequest, IErrorMessage, IGetPlayStateResponse} from "../../types/api";
 import * as Paths from "../paths";
 import { Authentication, redirectForAuth } from "./auth";
 
@@ -33,6 +33,16 @@ async function sendTracksAsResponse(spotify: Spotify, response: Response) {
         playlist,
         tracks
     });
+    response.end();
+}
+
+function sendPlaystateAsReponse(spotify: Spotify, response: Response) {
+    const responseBody: IGetPlayStateResponse = {
+        currentTrack: spotify.currentTrack ? spotify.currentTrack.track : null,
+        isPlaying: !!spotify.isPlaying,
+    };
+    response.send(responseBody);
+    response.status(200);
     response.end();
 }
 
@@ -103,9 +113,7 @@ function removeTrackHandler(spotify: Spotify): AsyncHandler {
 
 function getCurrentTrackHandler(spotify: Spotify): Handler {
     return (req, res) => {
-        res.send(spotify.currentTrack);
-        res.status(200);
-        res.end();
+        sendPlaystateAsReponse(spotify, res);
     };
 }
 
@@ -122,16 +130,13 @@ function nextTrackHandler(spotify: Spotify): AsyncHandler {
         }
 
         await spotify.nextTrack();
-
-        res.status(200);
-        res.send();
-        res.end();
+        sendPlaystateAsReponse(spotify, res);
     };
 }
 
 function startPlaybackHandler(spotify: Spotify): AsyncHandler {
     return async (req, res) => {
-        if (spotify.currentTrack !== null) {
+        if (spotify.currentTrack !== null && spotify.isPlaying) {
             const errorMessage: IErrorMessage = {
                 code: ErrorCodes.ALREADY_PLAYING,
                 message: "Already playing, cannot "
@@ -143,9 +148,7 @@ function startPlaybackHandler(spotify: Spotify): AsyncHandler {
         }
 
         await spotify.startPlayback();
-
-        res.status(200);
-        res.end();
+        sendPlaystateAsReponse(spotify, res);
     };
 }
 
@@ -163,9 +166,7 @@ function pausePlaybackHandler(spotify: Spotify): AsyncHandler {
         }
 
         await spotify.pausePlayback();
-
-        res.status(200);
-        res.end();
+        sendPlaystateAsReponse(spotify, res);
     };
 }
 

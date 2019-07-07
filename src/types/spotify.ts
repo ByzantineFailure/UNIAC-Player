@@ -3,12 +3,17 @@ export interface IListResponse<T> {
 }
 
 export interface IRawSpotifyTrack {
-    added_at: string;
     track: ITrack;
 }
 
 export interface ICurrentPlayback {
-    item: IRawSpotifyTrack|null;
+    item: ITrack|null;
+    is_playing: boolean;
+    context: IPlaybackContext|null;
+}
+
+export interface IPlaybackContext {
+    uri: string;
 }
 
 export interface IPlaylist {
@@ -29,6 +34,12 @@ export interface ITrack {
     artists: IArtist[];
     id: string;
     name: string;
+    type: string;
+    uri: string;
+}
+
+export interface IUser {
+    id: string;
     uri: string;
 }
 
@@ -49,4 +60,11 @@ export interface IRemoveTrackRequest {
         uri: string;
         positions?: number[];
     }>;
+}
+
+export interface ICreatePlaylistRequest {
+    collaborate?: boolean;
+    description?: string;
+    name: string;
+    public?: boolean;
 }

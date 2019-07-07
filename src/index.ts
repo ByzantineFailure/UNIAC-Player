@@ -16,6 +16,8 @@ if (!host) {
 const auth = new Authentication(host!, false, port);
 const spotify = new Spotify(auth);
 
+app.use(express.json());
+
 // AUTH HANDLERS
 app.use("/request_token", (req, res) => {
   if (auth.needToAuth()) {
