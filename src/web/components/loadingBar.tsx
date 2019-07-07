@@ -15,7 +15,7 @@ const RawLoadingBar: React.FunctionComponent<ILoadingBarProps> = (props: ILoadin
 );
 
 const mapStateToProps = (state: IState): ILoadingBarProps => ({
-    loading: true, // state.loading,
+    loading: state.loading,
 });
 
 const mapDispatchToProps = (state: IState): {} => ({});
