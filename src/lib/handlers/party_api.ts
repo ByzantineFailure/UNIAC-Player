@@ -24,7 +24,7 @@ function trackUriIsValid(uri: string, response: Response): boolean {
 }
 
 async function sendTracksAsResponse(spotify: Spotify, response: Response) {
-    const rawTracks = await spotify.getPlaylistTracks();
+    const rawTracks = await spotify.getPartyPlaylistTracks();
     const tracks = rawTracks.map((rawTrack) => rawTrack.track);
     const playlist = spotify.playlist;
 
@@ -41,8 +41,8 @@ function sendPlaystateAsReponse(spotify: Spotify, response: Response) {
         currentTrack: spotify.currentTrack ? spotify.currentTrack.track : null,
         isPlaying: !!spotify.isPlaying,
     };
-    response.send(responseBody);
     response.status(200);
+    response.send(responseBody);
     response.end();
 }
 
@@ -127,9 +127,10 @@ function nextTrackHandler(spotify: Spotify): AsyncHandler {
             res.send(errorResponse);
             res.status(400);
             res.end();
+            return;
         }
 
-        await spotify.nextTrack();
+        await spotify.partyNextTrack();
         sendPlaystateAsReponse(spotify, res);
     };
 }
@@ -147,7 +148,7 @@ function startPlaybackHandler(spotify: Spotify): AsyncHandler {
             return;
         }
 
-        await spotify.startPlayback();
+        await spotify.partyStartPlayback();
         sendPlaystateAsReponse(spotify, res);
     };
 }
@@ -165,17 +166,17 @@ function pausePlaybackHandler(spotify: Spotify): AsyncHandler {
             return;
         }
 
-        await spotify.pausePlayback();
+        await spotify.partyPausePlayback();
         sendPlaystateAsReponse(spotify, res);
     };
 }
 
-export function registerHandlers(app: Express, spotify: Spotify, auth: Authentication) {
-    app.get(Paths.GET_TRACKS_PATH, redirectForAuth(auth, getTracklistHandler(spotify)));
-    app.put(Paths.ADD_TRACK_PATH, redirectForAuth(auth, addTrackHandler(spotify)));
-    app.delete(Paths.REMOVE_TRACK_PATH, redirectForAuth(auth, removeTrackHandler(spotify)));
-    app.get(Paths.GET_CURRENT_TRACK_PATH, redirectForAuth(auth, getCurrentTrackHandler(spotify)));
-    app.post(Paths.NEXT_TRACK_PATH, redirectForAuth(auth, nextTrackHandler(spotify)));
-    app.post(Paths.PLAY_PATH, redirectForAuth(auth, startPlaybackHandler(spotify)));
-    app.post(Paths.PAUSE_PATH, redirectForAuth(auth, pausePlaybackHandler(spotify)));
+export function registerPartyHandlers(app: Express, spotify: Spotify, auth: Authentication) {
+    app.get(Paths.PARTY_GET_TRACKS_PATH, redirectForAuth(auth, getTracklistHandler(spotify)));
+    app.put(Paths.PARTY_ADD_TRACK_PATH, redirectForAuth(auth, addTrackHandler(spotify)));
+    app.delete(Paths.PARTY_REMOVE_TRACK_PATH, redirectForAuth(auth, removeTrackHandler(spotify)));
+    app.get(Paths.PARTY_GET_CURRENT_TRACK_PATH, redirectForAuth(auth, getCurrentTrackHandler(spotify)));
+    app.post(Paths.PARTY_NEXT_TRACK_PATH, redirectForAuth(auth, nextTrackHandler(spotify)));
+    app.post(Paths.PARTY_PLAY_PATH, redirectForAuth(auth, startPlaybackHandler(spotify)));
+    app.post(Paths.PARTY_PAUSE_PATH, redirectForAuth(auth, pausePlaybackHandler(spotify)));
 }

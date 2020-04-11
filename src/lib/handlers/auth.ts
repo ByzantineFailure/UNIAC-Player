@@ -5,6 +5,9 @@ import {URL} from "url";
 
 import * as Credentials from "../../credentials";
 
+console.log(`ClientId: ${Credentials.CLIENT_ID}`);
+console.log(`Client Secret: ${Credentials.CLIENT_SECRET}`);
+
 const REQUEST_TOKEN_URL = "https://accounts.spotify.com/authorize";
 const REDIRECT_PATH = "/access_token";
 

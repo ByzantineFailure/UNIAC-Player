@@ -1,8 +1,9 @@
 import express from "express";
 import ip from "ip";
 import path from "path";
-import {registerHandlers} from "./lib/handlers/api";
 import {Authentication, redirectForAuth} from "./lib/handlers/auth";
+import {registerGenericApiHandlers} from "./lib/handlers/generic_api";
+import {registerPartyHandlers} from "./lib/handlers/party_api";
 import { Spotify } from "./lib/spotify";
 
 const app = express();
@@ -38,7 +39,8 @@ app.use("/access_token", (req, res) => {
 });
 
 // API HANDLERS
-registerHandlers(app, spotify, auth);
+registerPartyHandlers(app, spotify, auth);
+registerGenericApiHandlers(app, spotify, auth);
 
 // EVERYTHING ELSE
 app.use("/static/", redirectForAuth(auth, express.static(path.join(__dirname, "web"))));

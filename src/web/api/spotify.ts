@@ -1,7 +1,7 @@
 import needle from "needle";
 import {Store} from "redux";
 
-import {ADD_TRACK_PATH, GET_CURRENT_TRACK_PATH, GET_TRACKS_PATH, NEXT_TRACK_PATH, PAUSE_PATH, PLAY_PATH, REMOVE_TRACK_PATH} from "../../lib/paths";
+import {PARTY_ADD_TRACK_PATH, PARTY_GET_CURRENT_TRACK_PATH, PARTY_GET_TRACKS_PATH, PARTY_NEXT_TRACK_PATH, PARTY_PAUSE_PATH, PARTY_PLAY_PATH, PARTY_REMOVE_TRACK_PATH} from "../../lib/paths";
 import {IAddTrackRequest, IGetPlayStateResponse, IGetTracklistResponse, IRemoveTrackRequest} from "../../types/api";
 import * as actions from "../state/actions";
 import {IState} from "../state/reducer";
@@ -38,7 +38,7 @@ export class Api {
         this.store.dispatch({
             type: actions.TYPES.REQUEST_PLAYLIST,
         });
-        needle.get(getRequestPath(GET_TRACKS_PATH),
+        needle.get(getRequestPath(PARTY_GET_TRACKS_PATH),
             (error: Error|null, response: needle.NeedleResponse, body: IGetTracklistResponse) => {
             if (error) {
                 console.log(error);
@@ -67,7 +67,7 @@ export class Api {
                 uri,
             };
 
-            needle.put(getRequestPath(ADD_TRACK_PATH), requestBody, {json: true},
+            needle.put(getRequestPath(PARTY_ADD_TRACK_PATH), requestBody, {json: true},
                 (error: Error|null, response: needle.NeedleResponse, body: IGetTracklistResponse) => {
                 if (error) {
                     console.log(error);
@@ -92,7 +92,7 @@ export class Api {
             type: actions.TYPES.REQUEST_PLAYSTATE,
         });
 
-        needle.get(getRequestPath(GET_CURRENT_TRACK_PATH),
+        needle.get(getRequestPath(PARTY_GET_CURRENT_TRACK_PATH),
             (error: Error|null, response: needle.NeedleResponse, body: IGetPlayStateResponse) => {
             if (error) {
                 console.log(error);
@@ -118,7 +118,7 @@ export class Api {
             uri,
         };
 
-        needle.delete(getRequestPath(REMOVE_TRACK_PATH), requestBody, {json: true},
+        needle.delete(getRequestPath(PARTY_REMOVE_TRACK_PATH), requestBody, {json: true},
             (error: Error|null, response: needle.NeedleResponse, body: IGetTracklistResponse) => {
                 if (error) {
                     console.log(error);
@@ -139,7 +139,7 @@ export class Api {
         this.store.dispatch({
             type: actions.TYPES.START_PLAYBACK,
         });
-        needle.post(getRequestPath(PLAY_PATH), {}, {json: true},
+        needle.post(getRequestPath(PARTY_PLAY_PATH), {}, {json: true},
             (error: Error|null, response: needle.NeedleResponse, body: IGetPlayStateResponse) => {
             if (error) {
                 console.log(error);
@@ -160,7 +160,7 @@ export class Api {
         this.store.dispatch({
             type: actions.TYPES.PAUSE_PLAYBACK,
         });
-        needle.post(getRequestPath(PAUSE_PATH), {}, {json: true},
+        needle.post(getRequestPath(PARTY_PAUSE_PATH), {}, {json: true},
             (error: Error|null, response: needle.NeedleResponse, body: IGetPlayStateResponse) => {
             if (error) {
                 console.log(error);
@@ -182,7 +182,7 @@ export class Api {
             type: actions.TYPES.SKIP_TRACK,
         });
 
-        needle.post(getRequestPath(NEXT_TRACK_PATH), {}, {json: true},
+        needle.post(getRequestPath(PARTY_NEXT_TRACK_PATH), {}, {json: true},
             (error: Error|null, response: needle.NeedleResponse, body: IGetPlayStateResponse) => {
             if (error) {
                 console.log(error);

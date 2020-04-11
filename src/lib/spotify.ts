@@ -79,13 +79,23 @@ export class Spotify {
         });
     }
 
-    // Uses the local cached version so we don't overload our rate limits.
-    public async getPlaylistTracks(): Promise<IRawSpotifyTrack[]> {
+    ////////
+    // Party mode functions.
+    ////////
+
+    /**
+     * Get the tracks in our party-mode playlist.
+     * Uses the local cached version so we don't overload our rate limits.
+     */
+    public async getPartyPlaylistTracks(): Promise<IRawSpotifyTrack[]> {
         await this.hasTracks;
         return this.currentTracklist;
     }
 
-    public async addTrackToPlaylist(uri: string, addToStart: boolean = false): Promise<IRawSpotifyTrack[]> {
+    /**
+     * Add a track to the party mode playlist.
+     */
+    public async addTrackToPlaylist(trackUri: string, addToStart: boolean = false): Promise<IRawSpotifyTrack[]> {
         await this.hasPlaylist;
         const url = `https://api.spotify.com/v1/playlists/${this.playlistId}/tracks`;
         let position: number|undefined;
@@ -99,7 +109,7 @@ export class Spotify {
 
         const request: IAddTrackRequest = {
             position,
-            uris: [uri],
+            uris: [trackUri],
         };
 
         await this.makeRequest("post", url, request);
@@ -111,54 +121,120 @@ export class Spotify {
         return this.currentTracklist;
     }
 
-    public async removeTrackFromPlaylist(uri: string): Promise<IRawSpotifyTrack[]> {
+    /**
+     * Remove a track from the party mode playlist.
+     */
+    public async removeTrackFromPlaylist(trackUri: string): Promise<IRawSpotifyTrack[]> {
         await this.hasPlaylist;
         const url = `https://api.spotify.com/v1/playlists/${this.playlistId}/tracks`;
         const request: IRemoveTrackRequest = {
-            tracks: [{uri}]
+          tracks: [{uri: trackUri}]
         };
 
         await this.makeRequest("delete", url, request);
 
         // Update the playlist
-        this._currentTracklist = this._currentTracklist.filter((track) => track.track.uri !== uri);
+        this._currentTracklist = this._currentTracklist.filter((track) => track.track.uri !== trackUri);
 
         return this.currentTracklist;
     }
 
-    public async nextTrack(): Promise<void> {
+    /**
+     * Start playback of the partymode playlist.
+     */
+    public async partyStartPlayback(): Promise<void> {
         await this.hasPlaylist;
-        const url = `https://api.spotify.com/v1/me/player/next`;
-
-        await this.makeRequest("post", url);
+        await this.startPlaylist(this.playlist.uri);
         await this.getCurrentTrack();
     }
 
-    public async startPlayback(): Promise<void> {
+    /**
+     * Go to next track on the partymode playlist.
+     */
+    public async partyNextTrack(): Promise<void> {
         await this.hasPlaylist;
+        await this.nextTrack();
+        await this.getCurrentTrack();
+    }
 
+    public async partyPreviousTrack(): Promise<void> {
+        await this.hasPlaylist;
+        await this.previousTrack();
+        await this.getCurrentTrack();
+    }
+
+    public async partyPausePlayback(): Promise<void> {
+        await this.hasPlaylist;
+        await this.pausePlayback();
+        await this.getCurrentTrack();
+    }
+
+    ////////
+    // GENERIC APIS
+    // Use these for generic spotify access handlers or for building
+    // out party mode functionality.
+    ////////
+
+    /**
+     * Skip to the next track.
+     */
+    public async nextTrack(): Promise<void> {
+        const url = `https://api.spotify.com/v1/me/player/next`;
+        await this.makeRequest("post", url);
+    }
+
+    /**
+     * Skip back to the previous track.
+     */
+    public async previousTrack(): Promise<void> {
+        const url = `https://api.spotify.com/v1/me/player/previous`;
+        await this.makeRequest("post", url);
+    }
+
+    /**
+     * Pause playback.
+     */
+    public async pausePlayback(): Promise<void> {
+        const url = `https://api.spotify.com/v1/me/player/pause`;
+        await this.makeRequest("put", url);
+    }
+
+    /**
+     * Get a list of all the user's playlists.
+     */
+    public async getPlaylists(): Promise<IPlaylist[]> {
+        const response = await this.makeRequest<IListResponse<IPlaylist>>(
+          "get", "https://api.spotify.com/v1/me/playlists");
+
+        return response.items;
+    }
+
+    /**
+     * Start playback from wherever it last was with no resource uri.
+     * Probably doesn't throw an error if nothing is queued up?
+     */
+    public async startPlayback(): Promise<void> {
+        const url = "https://api.spotify.com/v1/me/player/play";
+
+        await this.makeRequest("put", url, {});
+    }
+
+    /**
+     * Start playing a specific playlist.
+     */
+    public async startPlaylist(uri: string): Promise<void> {
         const url = "https://api.spotify.com/v1/me/player/play";
 
         await this.makeRequest("put", url, {
-           context_uri: this.playlist.uri,
+           context_uri: uri,
         });
-
-        await this.getCurrentTrack();
     }
 
-    public async pausePlayback(): Promise<void> {
-        await this.hasPlaylist;
-
-        const url = `https://api.spotify.com/v1/me/player/pause`;
-        await this.makeRequest("put", url);
-
-        await this.getCurrentTrack();
-    }
-
+    ///////
+    // Party-mode support functions
+    ///////
     private async getPlayerPlaylist(): Promise<IPlaylist> {
-        const response =
-        await this.makeRequest<IListResponse<IPlaylist>>("get", "https://api.spotify.com/v1/me/playlists");
-        const playlists = response.items;
+        const playlists = await this.getPlaylists();
         let foundPlaylist = playlists.find((playlist) => playlist.name === PLAYLIST_NAME);
 
         if (!foundPlaylist) {
@@ -223,6 +299,9 @@ export class Spotify {
         return await this.makeRequest<IPlaylist>("post", url, request);
     }
 
+    ///////
+    // General-use support functions
+    ///////
     private async getUser(): Promise<IUser> {
         const url = `https://api.spotify.com/v1/me`;
         return await this.makeRequest<IUser>("get", url);

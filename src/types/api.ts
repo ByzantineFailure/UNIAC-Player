@@ -4,6 +4,16 @@ import {IPlaylist, ITrack} from "./spotify";
 export type AsyncHandler = (req: express.Request, res: express.Response) => Promise<void>;
 export type Handler = (req: express.Request, res: express.Response) => void;
 
+//////////
+// Generic
+/////////
+export interface IGenericStartPlaylistRequest {
+  uri: string;
+}
+
+//////////
+// Party mode
+//////////
 /**
  * Response object for the get tracks call.  There is no request body.
  */
